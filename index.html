@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赠送码处理工具(Beta0.0)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; font-size: 1.8rem; }
+        textarea { width: 100%; height: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical; box-sizing: border-box; font-size: 14px; }
+        button.process-btn { width: 100%; padding: 12px; background-color: #3498db; color: #fff; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px; transition: background 0.3s; }
+        button.process-btn:hover { background-color: #2980b9; }
+        .card-list { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* 卡片基础样式 */
+        .card { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
+        .card-info { display: flex; flex-direction: column; }
+        
+        /* 花色文字样式 */
+        .card-suit { font-size: 1.2rem; font-weight: bold; transition: color 0.3s; }
+        .card-code { font-family: monospace; color: #666; margin-top: 4px; word-break: break-all; }
+        
+        /* 颜色类 */
+        .color-red { color: #e74c3c; } /* 红色 */
+        .color-black { color: #2c3e50; } /* 黑色 */
+        
+        button.copy-btn { padding: 8px 15px; background-color: #2ecc71; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.3s; white-space: nowrap; }
+        button.copy-btn:hover { background-color: #27ae60; }
+        .empty-tip { text-align: center; color: #999; margin-top: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>赠送码处理工具(Beta0.0)</h1>
+    <textarea id="inputText" placeholder="请在此处粘贴包含花色和兑换码的完整文本..."></textarea>
+    <button class="process-btn" id="processBtn">处理赠送码</button>
+    <div class="card-list" id="cardList"></div>
+</div>
+
+<script>
+    // 获取花色颜色的辅助函数
+    function getSuitColorClass(suitName) {
+        // 大王、红桃、方块 -> 红色
+        if (suitName.includes('大王') || suitName.includes('红桃') || suitName.includes('♥') || suitName.includes('♦')) {
+            return 'color-red';
+        }
+        // 小王、黑桃、梅花 -> 黑色
+        if (suitName.includes('小王') || suitName.includes('黑桃') || suitName.includes('♠') || suitName.includes('♣')) {
+            return 'color-black';
+        }
+        // 默认返回黑色
+        return 'color-black';
+    }
+
+    document.getElementById('processBtn').addEventListener('click', function() {
+        const rawText = document.getElementById('inputText').value.trim();
+        const cardListDiv = document.getElementById('cardList');
+        cardListDiv.innerHTML = ''; // 清空上一次的结果
+
+        if (!rawText) {
+            cardListDiv.innerHTML = '<div class="empty-tip">请先粘贴兑换码文本</div>';
+            return;
+        }
+
+        // 核心正则：匹配 "花色" 和 "两个大写字母#XXXX" 的组合
+        const regex = /([^\n]+?)\s*([A-Z]{2}#[A-Za-z0-9]+)/g;
+        let matches = [...rawText.matchAll(regex)];
+
+        if (matches.length === 0) {
+            cardListDiv.innerHTML = '<div class="empty-tip">未识别到有效的兑换码格式</div>';
+            return;
+        }
+
+        // 遍历匹配结果，动态生成卡片
+        matches.forEach(match => {
+            const suit = match[1].trim();
+            const code = match[2].trim();
+            const colorClass = getSuitColorClass(suit); // 获取对应的颜色类
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-info">
+                    <span class="card-suit ${colorClass}">${suit}</span>
+                    <span class="card-code">${code}</span>
+                </div>
+                <button class="copy-btn" data-code="${code}">复制</button>
+            `;
+            cardListDiv.appendChild(card);
+        });
+
+        // 为所有的复制按钮绑定点击事件
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const codeToCopy = this.getAttribute('data-code');
+                navigator.clipboard.writeText(codeToCopy).then(() => {
+                    const originalText = this.textContent;
+                    this.textContent = '已复制!';
+                    this.style.backgroundColor = '#95a5a6';
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                        this.style.backgroundColor = '#2ecc71';
+                    }, 1000);
+                }).catch(err => {
+                    alert('复制失败，请检查浏览器权限或手动复制: ' + codeToCopy);
+                });
+            });
+        });
+    });
+</script>
+</body>
+</html>
