@@ -6,27 +6,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>赠送码处理工具(Beta0.3)</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 12px; color: #333; }
+        .container { max-width:100%; margin: 0 auto; background: #fff; padding: 12px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; font-size: 1.8rem; }
-        textarea { width: 100%; height: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical; box-sizing: border-box; font-size: 14px; }
+        textarea { width: 100%; height: 50px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical; box-sizing: border-box; font-size: 14px; }
         button.process-btn { width: 100%; padding: 12px; background-color: #3498db; color: #fff; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px; transition: background 0.3s; }
         button.process-btn:hover { background-color: #2980b9; }
         .card-list { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
         
         /* 卡片基础样式 */
-        .card { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
+        .card { display: flex; justify-content: space-between; align-items: center; padding: 12px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
         .card-info { display: flex; flex-direction: column; }
         
         /* 花色文字样式 */
-        .card-suit { font-size: 1.2rem; font-weight: bold; transition: color 0.3s; }
-        .card-code { font-family: monospace; color: #666; margin-top: 4px; word-break: break-all; }
+        .card-suit { font-size: 1.4rem; font-weight: bold; margin-left:10px; transition: color 0.3s; }
+        .card-code { font-family: monospace; color: #666; margin-top: 2px; margin-left:10px; word-break: break-all; }
         
         /* 颜色类 */
         .color-red { color: #e74c3c; } /* 红色 */
         .color-black { color: #2c3e50; } /* 黑色 */
         
-        button.copy-btn { padding: 8px 15px; background-color: #2ecc71; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.3s; white-space: nowrap; }
+        button.copy-btn { padding: 12px 25px; background-color: #2ecc71; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background 0.3s; white-space: nowrap; }
         button.copy-btn:hover { background-color: #27ae60; }
         .empty-tip { text-align: center; color: #999; margin-top: 20px; }
     </style>
