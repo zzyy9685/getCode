@@ -1,41 +1,62 @@
-<!-Beta0.3-->
+<!-Beta0.4-->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>赠送码处理工具(Beta0.3)</title>
+    <title>赠送码处理工具(Beta0.4)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 12px; color: #333; }
-        .container { max-width:100%; margin: 0 auto; background: #fff; padding: 12px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; font-size: 1.8rem; }
-        textarea { width: 100%; height: 60px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical; box-sizing: border-box; font-size: 14px; }
-        button.process-btn { width: 100%; padding: 12px; background-color: #3498db; color: #fff; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px; transition: background 0.3s; }
-        button.process-btn:hover { background-color: #2980b9; }
-        .card-list { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; font-size: 1.6rem; }
+        
+        textarea { width: 100%; height: 60px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical; box-sizing: border-box; font-size: 14px; margin-bottom: 15px; }
+        
+        /* 按钮组布局 */
+        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        .action-btn { flex: 1; padding: 12px; border: none; border-radius: 5px; font-size: 15px; cursor: pointer; transition: all 0.2s; color: #fff; font-weight: bold; }
+        
+        /* 买家按钮样式 */
+        .btn-buyer { background-color: #3498db; }
+        .btn-buyer:hover { background-color: #2980b9; }
+        .btn-buyer.active { background-color: #1abc9c; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        
+        /* 卡商按钮样式 */
+        .btn-merchant { background-color: #9b59b6; }
+        .btn-merchant:hover { background-color: #8e44ad; }
+        .btn-merchant.active { background-color: #e67e22; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+
+        .card-list { display: flex; flex-direction: column; gap: 10px; }
         
         /* 卡片基础样式 */
-        .card { display: flex; justify-content: space-between; align-items: center; padding: 12px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
-        .card-info { display: flex; flex-direction: column; }
+        .card { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
+        .card-info { display: flex; flex-direction: column; flex: 1; margin-right: 10px; }
         
         /* 花色文字样式 */
-        .card-suit { font-size: 1.4rem; font-weight: bold; margin-left:10px; transition: color 0.3s; }
-        .card-code { font-family: monospace; color: #666; margin-top: 2px; margin-left:10px; word-break: break-all; }
+        .card-suit { font-size: 1.3rem; font-weight: bold; transition: color 0.3s; line-height: 1.2; }
+        .card-code { font-family: monospace; color: #666; margin-top: 4px; word-break: break-all; font-size: 0.9rem; }
+        .card-count { font-size: 0.85rem; color: #e67e22; font-weight: bold; margin-left: 5px; }
         
         /* 颜色类 */
-        .color-red { color: #e74c3c; } /* 红色 */
-        .color-black { color: #2c3e50; } /* 黑色 */
+        .color-red { color: #e74c3c; } 
+        .color-black { color: #2c3e50; } 
         
-        button.copy-btn { padding: 12px 25px; background-color: #2ecc71; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background 0.3s; white-space: nowrap; }
+        button.copy-btn { padding: 10px 20px; background-color: #2ecc71; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.3s; white-space: nowrap; }
         button.copy-btn:hover { background-color: #27ae60; }
-        .empty-tip { text-align: center; color: #999; margin-top: 20px; }
+        .empty-tip { text-align: center; color: #999; margin-top: 20px; padding: 20px; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>赠送码处理工具(Beta0.3)</h1>
+    <h1>赠送码处理工具(Beta0.4)</h1>
     <textarea id="inputText" placeholder="请在此处粘贴包含花色和兑换码的完整文本..."></textarea>
-    <button class="process-btn" id="processBtn">处理赠送码</button>
+    
+    <!-- 双按钮区域 -->
+    <div class="btn-group">
+        <button class="action-btn btn-buyer" id="buyerBtn" onclick="processCodes('buyer')">买家兑换处理</button>
+        <button class="action-btn btn-merchant" id="merchantBtn" onclick="processCodes('merchant')">卡商上架处理</button>
+    </div>
+
     <div class="card-list" id="cardList"></div>
 </div>
 
@@ -51,8 +72,24 @@
         return 'color-black';
     }
 
+    // 辅助函数：寻找真正的花色名称（排除掉兑换码行）
+    function findRealSuit(textBefore) {
+        const linesBefore = textBefore.split('\n');
+        for (let i = linesBefore.length - 1; i >= 0; i--) {
+            const line = linesBefore[i].trim();
+            if (line !== '' && !line.includes('#')) {
+                return line;
+            }
+        }
+        return '未知花色';
+    }
+
     // 核心处理逻辑
-    function processCodes() {
+    function processCodes(mode) {
+        // 更新按钮激活状态
+        document.getElementById('buyerBtn').className = `action-btn btn-buyer ${mode === 'buyer' ? 'active' : ''}`;
+        document.getElementById('merchantBtn').className = `action-btn btn-merchant ${mode === 'merchant' ? 'active' : ''}`;
+
         const rawText = document.getElementById('inputText').value.trim();
         const cardListDiv = document.getElementById('cardList');
         cardListDiv.innerHTML = ''; 
@@ -71,33 +108,10 @@
             return;
         }
 
-        // 辅助函数：寻找真正的花色名称（排除掉兑换码行）
-        function findRealSuit(textBefore) {
-            const linesBefore = textBefore.split('\n');
-            // 从后往前遍历
-            for (let i = linesBefore.length - 1; i >= 0; i--) {
-                const line = linesBefore[i].trim();
-                // 关键修正：如果这一行非空，且【不是】兑换码格式（不包含 #），才认为是花色
-                if (line !== '' && !line.includes('#')) {
-                    return line;
-                }
-            }
-            return '未知花色';
-        }
-
-        // 2. 第一遍遍历：统计每个花色到底有几个兑换码
-        let suitCountMap = {}; 
-        codeMatches.forEach(match => {
-            const codeIndex = match.index;
-            const textBefore = rawText.substring(0, codeIndex);
-            const currentSuit = findRealSuit(textBefore);
-            
-            suitCountMap[currentSuit] = (suitCountMap[currentSuit] || 0) + 1;
-        });
-
-        // 3. 第二遍遍历：生成展示数据
-        let suitCurrentIndex = {}; 
-        let cardsData = [];
+        // 2. 数据预处理：将码按花色分组
+        // groupedData 结构: { "大王": ["DG#...", "DG#..."], "小王": [...] }
+        let groupedData = {};
+        let suitOrder = []; // 记录花色出现的顺序
 
         codeMatches.forEach(match => {
             const code = match[0];
@@ -105,33 +119,83 @@
             const textBefore = rawText.substring(0, codeIndex);
             const currentSuit = findRealSuit(textBefore);
 
-            // 核心逻辑：如果该花色总数 > 1，则加括号序号；如果总数 == 1，则不加
-            let displaySuitName = currentSuit;
-            if (suitCountMap[currentSuit] > 1) {
-                if (!suitCurrentIndex[currentSuit]) suitCurrentIndex[currentSuit] = 1;
-                else suitCurrentIndex[currentSuit]++;
-                displaySuitName = `${currentSuit}(${suitCurrentIndex[currentSuit]})`;
+            if (!groupedData[currentSuit]) {
+                groupedData[currentSuit] = [];
+                suitOrder.push(currentSuit);
             }
-
-            const colorClass = getSuitColorClass(currentSuit);
-            cardsData.push({ suit: displaySuitName, code: code, colorClass: colorClass });
+            groupedData[currentSuit].push(code);
         });
 
-        // 4. 渲染卡片
-        cardsData.forEach(item => {
+        // 3. 根据模式渲染界面
+        if (mode === 'buyer') {
+            renderBuyerMode(groupedData, suitOrder);
+        } else {
+            renderMerchantMode(groupedData, suitOrder);
+        }
+
+        // 4. 绑定复制事件（统一绑定）
+        bindCopyEvents();
+    }
+
+    // 渲染买家模式（拆分显示）
+    function renderBuyerMode(groupedData, suitOrder) {
+        const cardListDiv = document.getElementById('cardList');
+        let suitCurrentIndex = {}; 
+
+        suitOrder.forEach(suit => {
+            const codes = groupedData[suit];
+            const totalCount = codes.length;
+
+            codes.forEach((code, index) => {
+                // 逻辑：总数>1才加括号序号
+                let displaySuitName = suit;
+                if (totalCount > 1) {
+                    displaySuitName = `${suit}(${index + 1})`;
+                }
+
+                const colorClass = getSuitColorClass(suit);
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-info">
+                        <span class="card-suit ${colorClass}">${displaySuitName}</span>
+                        <span class="card-code">${code}</span>
+                    </div>
+                    <button class="copy-btn" data-code="${code}">复制</button>
+                `;
+                cardListDiv.appendChild(card);
+            });
+        });
+    }
+
+    // 渲染卡商模式（合并显示）
+    function renderMerchantMode(groupedData, suitOrder) {
+        const cardListDiv = document.getElementById('cardList');
+
+        suitOrder.forEach(suit => {
+            const codes = groupedData[suit];
+            const totalCount = codes.length;
+            const firstCode = codes[0];
+            
+            // 将所有码用换行符拼接，用于复制
+            const fullCodeString = codes.join('\n');
+            
+            const colorClass = getSuitColorClass(suit);
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
                 <div class="card-info">
-                    <span class="card-suit ${item.colorClass}">${item.suit}</span>
-                    <span class="card-code">${item.code}</span>
+                    <span class="card-suit ${colorClass}">${suit} <span class="card-count">(等${totalCount}个码)</span></span>
+                    <span class="card-code">${firstCode}</span>
                 </div>
-                <button class="copy-btn" data-code="${item.code}">复制</button>
+                <button class="copy-btn" data-code="${fullCodeString.replace(/"/g, '&quot;')}">复制全部</button>
             `;
             cardListDiv.appendChild(card);
         });
+    }
 
-        // 5. 绑定复制事件
+    // 统一绑定复制事件
+    function bindCopyEvents() {
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const codeToCopy = this.getAttribute('data-code');
@@ -144,13 +208,11 @@
                         this.style.backgroundColor = '#2ecc71';
                     }, 1000);
                 }).catch(err => {
-                    alert('复制失败，请检查浏览器权限或手动复制: ' + codeToCopy);
+                    alert('复制失败，请检查浏览器权限或手动复制');
                 });
             });
         });
     }
-
-    document.getElementById('processBtn').addEventListener('click', processCodes);
 </script>
 </body>
 </html>
