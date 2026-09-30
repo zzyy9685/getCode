@@ -1,10 +1,10 @@
-<!-Beta0.4-->
+<!-Beta0.5-->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>赠送码处理工具(Beta0.4)</title>
+    <title>赠送码处理工具(Beta0.5)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 12px; color: #333; }
         .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
@@ -42,13 +42,13 @@
         .color-black { color: #2c3e50; } 
         
         button.copy-btn { padding: 10px 20px; background-color: #2ecc71; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.3s; white-space: nowrap; }
-        button.copy-btn:hover { background-color: #27ae60; }
+        button.copy-btn:hover { opacity: 0.9; }
         .empty-tip { text-align: center; color: #999; margin-top: 20px; padding: 20px; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>赠送码处理工具(Beta0.4)</h1>
+    <h1>赠送码处理工具(Beta0.5)</h1>
     <textarea id="inputText" placeholder="请在此处粘贴包含花色和兑换码的完整文本..."></textarea>
     
     <!-- 双按钮区域 -->
@@ -109,9 +109,8 @@
         }
 
         // 2. 数据预处理：将码按花色分组
-        // groupedData 结构: { "大王": ["DG#...", "DG#..."], "小王": [...] }
         let groupedData = {};
-        let suitOrder = []; // 记录花色出现的顺序
+        let suitOrder = []; 
 
         codeMatches.forEach(match => {
             const code = match[0];
@@ -133,21 +132,19 @@
             renderMerchantMode(groupedData, suitOrder);
         }
 
-        // 4. 绑定复制事件（统一绑定）
+        // 4. 绑定复制事件
         bindCopyEvents();
     }
 
     // 渲染买家模式（拆分显示）
     function renderBuyerMode(groupedData, suitOrder) {
         const cardListDiv = document.getElementById('cardList');
-        let suitCurrentIndex = {}; 
 
         suitOrder.forEach(suit => {
             const codes = groupedData[suit];
             const totalCount = codes.length;
 
             codes.forEach((code, index) => {
-                // 逻辑：总数>1才加括号序号
                 let displaySuitName = suit;
                 if (totalCount > 1) {
                     displaySuitName = `${suit}(${index + 1})`;
@@ -176,8 +173,6 @@
             const codes = groupedData[suit];
             const totalCount = codes.length;
             const firstCode = codes[0];
-            
-            // 将所有码用换行符拼接，用于复制
             const fullCodeString = codes.join('\n');
             
             const colorClass = getSuitColorClass(suit);
@@ -194,19 +189,24 @@
         });
     }
 
-    // 统一绑定复制事件
+    // 统一绑定复制事件（核心修改点）
     function bindCopyEvents() {
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const codeToCopy = this.getAttribute('data-code');
+                const originalText = this.textContent; // 记住初始文字（复制 / 复制全部）
+                
                 navigator.clipboard.writeText(codeToCopy).then(() => {
-                    const originalText = this.textContent;
+                    // 1. 立即变为灰色，提示已复制
                     this.textContent = '已复制!';
                     this.style.backgroundColor = '#95a5a6';
+                    
+                    // 2. 1秒后变为红色，提示可以再次复制
                     setTimeout(() => {
-                        this.textContent = originalText;
-                        this.style.backgroundColor = '#2ecc71';
+                        this.textContent = '再次复制';
+                        this.style.backgroundColor = '#e74c3c';
                     }, 1000);
+                    
                 }).catch(err => {
                     alert('复制失败，请检查浏览器权限或手动复制');
                 });
