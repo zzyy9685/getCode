@@ -1,10 +1,10 @@
-<!-Beta0.6-->
+<!-Beta0.8-->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>赠送码处理工具(Beta0.6)</title>
+    <title>赠送码处理工具(Beta0.8)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 12px; color: #333; }
         .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
@@ -12,45 +12,54 @@
         
         textarea { width: 100%; height: 60px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical; box-sizing: border-box; font-size: 14px; margin-bottom: 15px; }
         
+        /* 排序单选框样式 */
+        .sort-group { display: flex; gap: 15px; margin-bottom: 15px; font-size: 14px; align-items: center; justify-content: center; flex-wrap: wrap; }
+        .sort-group label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
         /* 按钮组布局 */
         .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
         .action-btn { flex: 1; padding: 12px; border: none; border-radius: 5px; font-size: 15px; cursor: pointer; transition: all 0.2s; color: #fff; font-weight: bold; }
         
-        /* 买家按钮样式 */
         .btn-buyer { background-color: #3498db; }
         .btn-buyer:hover { background-color: #2980b9; }
         .btn-buyer.active { background-color: #1abc9c; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
         
-        /* 卡商按钮样式 */
         .btn-merchant { background-color: #9b59b6; }
         .btn-merchant:hover { background-color: #8e44ad; }
         .btn-merchant.active { background-color: #e67e22; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
 
         .card-list { display: flex; flex-direction: column; gap: 10px; }
         
-        /* 卡片基础样式 */
-        .card { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
-        .card-info { display: flex; flex-direction: column; flex: 1; margin-right: 10px; }
-        
-        /* 花色文字样式 */
+        .card { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; 
+            border-radius: 8px; height: 70px; box-sizing: border-box;
+        }
+        .card-info { display: flex; flex-direction: column; flex: 1; margin-right: 10px; min-width: 0; overflow: hidden; }
         .card-suit { font-size: 1.3rem; font-weight: bold; transition: color 0.3s; line-height: 1.2; }
-        .card-code { font-family: monospace; color: #666; margin-top: 4px; word-break: break-all; font-size: 0.9rem; }
+        .card-code { font-family: monospace; color: #666; margin-top: 4px; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .card-count { font-size: 0.85rem; color: #e67e22; font-weight: bold; margin-left: 5px; }
         
-        /* 颜色类 */
         .color-red { color: #e74c3c; } 
         .color-black { color: #2c3e50; } 
         
-        button.copy-btn { padding: 10px 15px; background-color: #2ecc71; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.3s; white-space: nowrap; }
+        button.copy-btn { padding: 10px 15px; background-color: #2ecc71; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: background 0.3s; white-space: nowrap; flex-shrink: 0; } 
         button.copy-btn:hover { opacity: 0.9; }
         .empty-tip { text-align: center; color: #999; margin-top: 20px; padding: 20px; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>赠送码处理工具(Beta0.6)</h1>
+    <h1>赠送码处理工具(Beta0.8)</h1>
     <textarea id="inputText" placeholder="请在此处粘贴包含花色和兑换码的完整文本..."></textarea>
     
+    <!-- 排序单选框 -->
+    <div class="sort-group">
+        <span>排序方式：</span>
+        <label><input type="radio" name="sortType" value="list" checked onchange="handleSortChange()"> 按列表顺序排列</label>
+        <label><input type="radio" name="sortType" value="suit" onchange="handleSortChange()"> 按花色顺序排列</label>
+    </div>
+
     <!-- 双按钮区域 -->
     <div class="btn-group">
         <button class="action-btn btn-buyer" id="buyerBtn" onclick="processCodes('buyer')">买家兑换处理</button>
@@ -61,32 +70,93 @@
 </div>
 
 <script>
-    // 获取花色颜色的辅助函数
+    // ========== 全局状态变量 ==========
+    let currentMode = null; 
+    let groupedData = {};   
+    let originalSuitOrder = []; 
+
+    // ========== 核心排序规则引擎 ==========
+    // 点数权重 (A最大，2最小)
+    const RANK_WEIGHT = { 'A':14, 'K':13, 'Q':12, 'J':11, '10':10, '9':9, '8':8, '7':7, '6':6, '5':5, '4':4, '3':3, '2':2 };
+    
+    // 花色权重
+    const SUIT_WEIGHT_LIST = { '♥':4, '♠':3, '♦':2, '♣':1 }; // 列表顺序: 红桃 > 黑桃 > 方块 > 梅花
+    const SUIT_WEIGHT_SUIT = { '♥':4, '♠':3, '♦':2, '♣':1 }; // 花色顺序: 红桃 > 黑桃 > 方块 > 梅花
+
+    // 解析花色名称，返回 { type: 'joker'|'normal', rank: 'A', suit: '♥' }
+    function parseSuit(suitName) {
+        if (suitName.includes('大王')) return { type: 'joker', value: 99 };
+        if (suitName.includes('小王')) return { type: 'joker', value: 98 };
+        
+        // 提取花色符号和点数
+        const match = suitName.match(/([♥♠♦♣])(.*)/);
+        if (match) {
+            return { type: 'normal', suit: match[1], rank: match[2].trim() };
+        }
+        return { type: 'unknown', value: 0 };
+    }
+
+    // 计算排序得分
+    function getSuitScore(suitName, mode) {
+        const parsed = parseSuit(suitName);
+        if (parsed.type === 'joker') return parsed.value;
+        if (parsed.type === 'normal') {
+            const rankW = RANK_WEIGHT[parsed.rank] || 0;
+            const suitW = (mode === 'list' ? SUIT_WEIGHT_LIST : SUIT_WEIGHT_SUIT)[parsed.suit] || 0;
+            // 列表顺序: 先比点数，再比花色。 花色顺序: 先比花色，再比点数。
+            return mode === 'list' ? (rankW * 10 + suitW) : (suitW * 100 + rankW);
+        }
+        return 0;
+    }
+
+    // ========== 辅助函数 ==========
     function getSuitColorClass(suitName) {
-        if (suitName.includes('大王') || suitName.includes('红桃') || suitName.includes('♥') || suitName.includes('♦')) {
-            return 'color-red';
-        }
-        if (suitName.includes('小王') || suitName.includes('黑桃') || suitName.includes('♠') || suitName.includes('♣')) {
-            return 'color-black';
-        }
+        if (suitName.includes('大王') || suitName.includes('红桃') || suitName.includes('♥') || suitName.includes('♦')) return 'color-red';
+        if (suitName.includes('小王') || suitName.includes('黑桃') || suitName.includes('♠') || suitName.includes('♣')) return 'color-black';
         return 'color-black';
     }
 
-    // 辅助函数：寻找真正的花色名称（排除掉兑换码行）
     function findRealSuit(textBefore) {
         const linesBefore = textBefore.split('\n');
         for (let i = linesBefore.length - 1; i >= 0; i--) {
             const line = linesBefore[i].trim();
-            if (line !== '' && !line.includes('#')) {
-                return line;
-            }
+            if (line !== '' && !line.includes('#')) return line;
         }
         return '未知花色';
     }
 
-    // 核心处理逻辑
+    // ========== 核心排序与渲染逻辑 ==========
+    function getSortedSuitOrder() {
+        const sortType = document.querySelector('input[name="sortType"]:checked').value;
+        // 根据当前选择的排序模式，计算得分并降序排列
+        return [...originalSuitOrder].sort((a, b) => {
+            return getSuitScore(b, sortType) - getSuitScore(a, sortType);
+        });
+    }
+
+    // 处理单选框切换事件
+    function handleSortChange() {
+        if (!currentMode || originalSuitOrder.length === 0) return;
+        renderCurrentMode();
+    }
+
+    // 根据当前模式重新渲染
+    function renderCurrentMode() {
+        const sortedOrder = getSortedSuitOrder();
+        const cardListDiv = document.getElementById('cardList');
+        cardListDiv.innerHTML = ''; 
+
+        if (currentMode === 'buyer') {
+            renderBuyerMode(sortedOrder);
+        } else {
+            renderMerchantMode(sortedOrder);
+        }
+        bindCopyEvents();
+    }
+
+    // ========== 数据解析与入口 ==========
     function processCodes(mode) {
-        // 更新按钮激活状态
+        currentMode = mode;
         document.getElementById('buyerBtn').className = `action-btn btn-buyer ${mode === 'buyer' ? 'active' : ''}`;
         document.getElementById('merchantBtn').className = `action-btn btn-merchant ${mode === 'merchant' ? 'active' : ''}`;
 
@@ -99,56 +169,65 @@
             return;
         }
 
-        // 1. 提取所有的兑换码及其位置
-        const codeRegex = /([A-Z]{2}#[A-Za-z0-9]+)/g;
-        let codeMatches = [...rawText.matchAll(codeRegex)];
+        groupedData = {};
+        originalSuitOrder = []; 
 
-        if (codeMatches.length === 0) {
-            cardListDiv.innerHTML = '<div class="empty-tip">未识别到有效的兑换码格式</div>';
+        if (rawText.startsWith('[')) {
+            try {
+                const arr = JSON.parse(rawText);
+                let currentSuit = null;
+                for (let i = 0; i < arr.length; i++) {
+                    const item = String(arr[i]).trim();
+                    if (item.includes('#')) {
+                        if (currentSuit) groupedData[currentSuit].push(item);
+                    } else {
+                        currentSuit = item;
+                        if (!groupedData[currentSuit]) {
+                            groupedData[currentSuit] = [];
+                            originalSuitOrder.push(currentSuit);
+                        }
+                    }
+                }
+            } catch (e) {
+                cardListDiv.innerHTML = '<div class="empty-tip">JSON 格式解析失败，请检查文本</div>';
+                return;
+            }
+        } else {
+            const codeRegex = /([A-Z]{2}#[A-Za-z0-9]+)/g;
+            let codeMatches = [...rawText.matchAll(codeRegex)];
+            if (codeMatches.length === 0) {
+                cardListDiv.innerHTML = '<div class="empty-tip">未识别到有效的兑换码格式</div>';
+                return;
+            }
+            codeMatches.forEach(match => {
+                const code = match[0];
+                const textBefore = rawText.substring(0, match.index);
+                const currentSuit = findRealSuit(textBefore);
+                if (!groupedData[currentSuit]) {
+                    groupedData[currentSuit] = [];
+                    originalSuitOrder.push(currentSuit);
+                }
+                groupedData[currentSuit].push(code);
+            });
+        }
+
+        if (originalSuitOrder.length === 0) {
+            cardListDiv.innerHTML = '<div class="empty-tip">未提取到任何有效数据</div>';
             return;
         }
 
-        // 2. 数据预处理：将码按花色分组
-        let groupedData = {};
-        let suitOrder = []; 
-
-        codeMatches.forEach(match => {
-            const code = match[0];
-            const codeIndex = match.index;
-            const textBefore = rawText.substring(0, codeIndex);
-            const currentSuit = findRealSuit(textBefore);
-
-            if (!groupedData[currentSuit]) {
-                groupedData[currentSuit] = [];
-                suitOrder.push(currentSuit);
-            }
-            groupedData[currentSuit].push(code);
-        });
-
-        // 3. 根据模式渲染界面
-        if (mode === 'buyer') {
-            renderBuyerMode(groupedData, suitOrder);
-        } else {
-            renderMerchantMode(groupedData, suitOrder);
-        }
-
-        // 4. 绑定复制事件
-        bindCopyEvents();
+        renderCurrentMode();
     }
 
-    // 渲染买家模式（拆分显示）
-    function renderBuyerMode(groupedData, suitOrder) {
+    // ========== 渲染函数 ==========
+    function renderBuyerMode(suitOrder) {
         const cardListDiv = document.getElementById('cardList');
-
         suitOrder.forEach(suit => {
             const codes = groupedData[suit];
             const totalCount = codes.length;
-
             codes.forEach((code, index) => {
                 let displaySuitName = suit;
-                if (totalCount > 1) {
-                    displaySuitName = `${suit}(${index + 1})`;
-                }
+                if (totalCount > 1) displaySuitName = `${suit}(${index + 1})`;
 
                 const colorClass = getSuitColorClass(suit);
                 const card = document.createElement('div');
@@ -165,16 +244,13 @@
         });
     }
 
-    // 渲染卡商模式（合并显示）
-    function renderMerchantMode(groupedData, suitOrder) {
+    function renderMerchantMode(suitOrder) {
         const cardListDiv = document.getElementById('cardList');
-
         suitOrder.forEach(suit => {
             const codes = groupedData[suit];
             const totalCount = codes.length;
             const firstCode = codes[0];
             const fullCodeString = codes.join('\n');
-            
             const colorClass = getSuitColorClass(suit);
             const card = document.createElement('div');
             card.className = 'card';
@@ -189,24 +265,18 @@
         });
     }
 
-    // 统一绑定复制事件（核心修改点）
+    // ========== 复制事件绑定 ==========
     function bindCopyEvents() {
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const codeToCopy = this.getAttribute('data-code');
-                const originalText = this.textContent; // 记住初始文字（复制 / 复制全部）
-                
                 navigator.clipboard.writeText(codeToCopy).then(() => {
-                    // 1. 立即变为灰色，提示已复制
                     this.textContent = '已复制!';
                     this.style.backgroundColor = '#95a5a6';
-                    
-                    // 2. 1秒后变为红色，提示可以再次复制
                     setTimeout(() => {
                         this.textContent = '再次复制';
                         this.style.backgroundColor = '#e74c3c';
                     }, 1000);
-                    
                 }).catch(err => {
                     alert('复制失败，请检查浏览器权限或手动复制');
                 });
